@@ -12,9 +12,18 @@ use std::{
 };
 use zip::{ZipArchive, ZipWriter};
 
+pub(crate) const SCHEMA: &str =
+    "https://raw.githubusercontent.com/raftario/blist/master/playlist.schema.json";
+#[inline]
+fn schema() -> &'static str {
+    SCHEMA
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Playlist {
+    #[serde(rename = "$schema", default = "schema", skip_deserializing)]
+    pub _schema: &'static str,
     pub title: String,
     pub author: Option<String>,
     pub description: Option<String>,
