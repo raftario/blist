@@ -1,5 +1,5 @@
 use anyhow::Result;
-use blist::{beatmap::BeatmapType, Beatmap, Playlist};
+use blist::{beatmap::BeatmapType, playlist::SCHEMA, Beatmap, Playlist};
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::{Map, Value};
@@ -40,6 +40,7 @@ impl LegacyPlaylist {
         } = self;
 
         let mut playlist = Playlist {
+            _schema: SCHEMA,
             title,
             author,
             description,

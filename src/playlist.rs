@@ -12,7 +12,7 @@ use std::{
 };
 use zip::{ZipArchive, ZipWriter};
 
-pub(crate) const SCHEMA: &str =
+pub const SCHEMA: &str =
     "https://raw.githubusercontent.com/raftario/blist/master/playlist.schema.json";
 #[inline]
 fn schema() -> &'static str {
@@ -37,6 +37,7 @@ pub struct Playlist {
 impl Playlist {
     pub fn new(title: String) -> Self {
         Self {
+            _schema: SCHEMA,
             title,
             author: None,
             description: None,
