@@ -25,7 +25,9 @@ pub struct Playlist {
     #[serde(rename = "$schema", default = "schema", skip_deserializing)]
     pub _schema: &'static str,
     pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub author: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
     pub cover: Option<PlaylistCover>,

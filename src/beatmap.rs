@@ -12,12 +12,15 @@ use std::cmp::Ordering;
 pub struct Beatmap {
     #[serde(rename = "type")]
     pub ty: BeatmapType,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub date: Option<DateTime<Utc>>,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub difficulties: Vec<BeatmapDifficulty>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub hash: Option<String>,
-    #[serde(rename = "levelID")]
+    #[serde(rename = "levelID", skip_serializing_if = "Option::is_none")]
     pub level_id: Option<String>,
     #[serde(default = "Map::new", skip_serializing_if = "Map::is_empty")]
     pub custom_data: Map<String, Value>,

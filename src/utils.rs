@@ -20,5 +20,5 @@ pub(crate) fn str_is_hex(s: &str) -> bool {
 #[inline]
 pub(crate) fn path_is_invalid<P: AsRef<Path>>(p: P) -> bool {
     let p = p.as_ref();
-    !p.is_file() || !p.is_relative() || p.extension().is_none() || p.parent().is_some()
+    p.is_absolute() || p.extension().is_none() || p.parent() != Some(Path::new(""))
 }

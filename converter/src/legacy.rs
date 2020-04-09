@@ -4,12 +4,9 @@ use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
-const PNG_MAGIC_NUMBER_LEN: usize = 8;
-const PNG_MAGIC_NUMBER: &[u8; PNG_MAGIC_NUMBER_LEN] =
-    &[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
-
-const JPG_MAGIC_NUMBER_LEN: usize = 3;
-const JPG_MAGIC_NUMBER: &[u8; JPG_MAGIC_NUMBER_LEN] = &[0xFF, 0xD8, 0xFF];
+const PNG_B64_PREFIX: &str = "data:image/png;base64,";
+const JPG_B64_PREFIX: &str = "data:image/jpg;base64,";
+const JPEG_B64_PREFIX: &str = "data:image/jpeg;base64,";
 
 #[derive(Deserialize)]
 pub struct LegacyPlaylist {
@@ -56,20 +53,26 @@ impl LegacyPlaylist {
             },
         };
         if let Some(c) = cover {
-            let data = base64::decode(c)?;
-            if data.len() >= PNG_MAGIC_NUMBER_LEN
-                && constant_time_eq::constant_time_eq(
-                    &data[..PNG_MAGIC_NUMBER_LEN],
-                    PNG_MAGIC_NUMBER,
-                )
-            {
+            if c.starts_with(PNG_B64_PREFIX) {
+                let mut b64 = &c[PNG_B64_PREFIX.len()..];
+                while b64.starts_with(' ') {
+                    b64 = &b64[1..];
+                }
+                let data = base64::decode(b64)?;
                 playlist.set_png_cover(data.as_slice())?;
-            } else if data.len() >= JPG_MAGIC_NUMBER_LEN
-                && constant_time_eq::constant_time_eq(
-                    &data[..JPG_MAGIC_NUMBER_LEN],
-                    JPG_MAGIC_NUMBER,
-                )
-            {
+            } else if c.starts_with(JPG_B64_PREFIX) {
+                let mut b64 = &c[JPG_B64_PREFIX.len()..];
+                while b64.starts_with(' ') {
+                    b64 = &b64[1..];
+                }
+                let data = base64::decode(b64)?;
+                playlist.set_jpg_cover(data.as_slice())?;
+            } else if c.starts_with(JPEG_B64_PREFIX) {
+                let mut b64 = &c[JPEG_B64_PREFIX.len()..];
+                while b64.starts_with(' ') {
+                    b64 = &b64[1..];
+                }
+                let data = base64::decode(b64)?;
                 playlist.set_jpg_cover(data.as_slice())?;
             }
         }

@@ -79,14 +79,14 @@ fn convert_inner<P: AsRef<Path>>(
         );
     }
 
-    {
-        println!("Reading `{}`", old_path.display());
+    println!("Reading `{}`", old_path.display());
+    let legacy_playlist: LegacyPlaylist = {
         let mut reader = BufReader::new(File::open(old_path)?);
-        let legacy_playlist: LegacyPlaylist = serde_json::from_reader(&mut reader)?;
-
-        let playlist = legacy_playlist.into_playlist(custom_data)?;
-
-        println!("Writing `{}`", new_path.display());
+        serde_json::from_reader(&mut reader)?
+    };
+    let playlist = legacy_playlist.into_playlist(custom_data)?;
+    println!("Writing `{}`", new_path.display());
+    {
         let mut writer = BufWriter::new(File::create(&new_path)?);
         playlist.write(&mut writer)?;
     }
