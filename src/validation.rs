@@ -1,4 +1,3 @@
-use crate::playlist::PlaylistCoverType;
 use std::path::PathBuf;
 use thiserror::Error;
 

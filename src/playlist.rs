@@ -1,11 +1,16 @@
 use crate::{
     beatmap::Beatmap,
+    error::Error,
     utils::{self, JPG_MAGIC_NUMBER, JPG_MAGIC_NUMBER_LEN, PNG_MAGIC_NUMBER, PNG_MAGIC_NUMBER_LEN},
     validation::{PlaylistCoverError, PlaylistError},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use std::path::PathBuf;
+use std::{
+    io::{Read, Seek},
+    path::PathBuf,
+};
+use zip::ZipArchive;
 
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -30,6 +35,33 @@ impl Playlist {
             maps: Vec::new(),
             custom_data: Map::new(),
         }
+    }
+
+    pub fn read<R: Read + Seek>(reader: R) -> Result<Self, Error> {
+        let mut zip = ZipArchive::new(reader)?;
+
+        let mut playlist: Self = {
+            let mut playlist_file = zip.by_name("playlist.json")?;
+            serde_json::from_reader(&mut playlist_file)?
+        };
+
+        if let Some(c) = &mut playlist.cover {
+            if !utils::path_is_invalid(&c.path) {
+                let ext = c.path.extension().unwrap();
+                if ext == "png" {
+                    c.ty = PlaylistCoverType::Png;
+                    let mut cover_file = zip.by_name(c.path.to_str().unwrap())?;
+                    cover_file.read_to_end(&mut c.data)?;
+                } else if ext == "jpg" || ext == "jpeg" {
+                    c.ty = PlaylistCoverType::Jpg;
+                    let mut cover_file = zip.by_name(c.path.to_str().unwrap())?;
+                    cover_file.read_to_end(&mut c.data)?;
+                }
+            }
+        }
+
+        playlist.validate()?;
+        Ok(playlist)
     }
 
     pub(crate) fn validate(&self) -> Result<(), PlaylistError> {
