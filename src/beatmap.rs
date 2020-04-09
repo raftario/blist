@@ -134,7 +134,7 @@ impl Ord for Beatmap {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum BeatmapType {
     Key,
@@ -143,7 +143,7 @@ pub enum BeatmapType {
     LevelId,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BeatmapDifficulty {
     pub name: String,

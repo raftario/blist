@@ -194,7 +194,7 @@ impl Playlist {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]
 pub struct PlaylistCover {
     #[serde(rename = "cover")]
     pub path: PathBuf,
@@ -253,7 +253,7 @@ impl PlaylistCover {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum PlaylistCoverType {
     Png,
     Jpg,

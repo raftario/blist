@@ -5,6 +5,11 @@ authors = ["Raphaël Thériault <raphael_theriault@outlook.com>"]
 edition = "2018"
 license = "MIT"
 
+[workspace]
+members = [
+    "converter",
+]
+
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 constant_time_eq = "0.1"
