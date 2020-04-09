@@ -9,16 +9,26 @@ pub struct Playlist {
     pub title: String,
     pub author: Option<String>,
     pub description: Option<String>,
-    cover: Option<PathBuf>,
-    #[serde(skip)]
-    cover_data: Option<Vec<u8>>,
+    #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
+    pub cover: Option<PlaylistCover>,
     pub maps: Vec<Beatmap>,
-    #[serde(default = "Map::new", skip_serializing_if = "Map::is_empty")]
+    #[serde(default, skip_serializing_if = "Map::is_empty")]
     pub custom_data: Map<String, Value>,
 }
 
 impl Playlist {
-    pub fn validate(&self) -> Result<(), PlaylistError> {
+    pub fn new(title: String) -> Self {
+        Self {
+            title,
+            author: None,
+            description: None,
+            cover: None,
+            maps: Vec::new(),
+            custom_data: Map::new(),
+        }
+    }
+
+    pub(crate) fn validate(&self) -> Result<(), PlaylistError> {
         if utils::str_is_empty_or_has_newlines(&self.title) {
             return Err(PlaylistError::InvalidField {
                 field: "title",
@@ -49,5 +59,29 @@ impl Playlist {
         }
 
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
+pub struct PlaylistCover {
+    #[serde(rename = "cover")]
+    path: PathBuf,
+    #[serde(skip)]
+    data: Vec<u8>,
+    #[serde(skip)]
+    ty: PlaylistCoverType,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum PlaylistCoverType {
+    Png,
+    Jpg,
+    Unknown,
+}
+
+impl Default for PlaylistCoverType {
+    #[inline]
+    fn default() -> Self {
+        Self::Unknown
     }
 }

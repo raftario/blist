@@ -58,7 +58,7 @@ impl Beatmap {
         }
     }
 
-    pub fn validate(&self) -> Result<(), BeatmapError> {
+    pub(crate) fn validate(&self) -> Result<(), BeatmapError> {
         match self.ty {
             BeatmapType::Key => {
                 if self.key.is_none() {
@@ -151,7 +151,7 @@ pub struct BeatmapDifficulty {
 }
 
 impl BeatmapDifficulty {
-    pub fn validate(&self) -> Result<(), BeatmapDifficultyError> {
+    pub(crate) fn validate(&self) -> Result<(), BeatmapDifficultyError> {
         if utils::str_is_empty_or_has_newlines(&self.name) {
             return Err(BeatmapDifficultyError::InvalidField {
                 field: "name",
