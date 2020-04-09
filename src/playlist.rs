@@ -80,6 +80,39 @@ impl Playlist {
         Ok(())
     }
 
+    pub fn set_png_cover<R: Read>(&mut self, mut reader: R) -> Result<(), Error> {
+        let path = PathBuf::from("cover.png");
+        let mut data = Vec::new();
+        reader.read_to_end(&mut data)?;
+        let ty = PlaylistCoverType::Png;
+
+        if let Some(c) = self.cover.as_mut() {
+            c.path = path;
+            c.data = data;
+            c.ty = ty;
+        } else {
+            self.cover = Some(PlaylistCover { path, data, ty });
+        }
+
+        Ok(())
+    }
+    pub fn set_jpg_cover<R: Read>(&mut self, mut reader: R) -> Result<(), Error> {
+        let path = PathBuf::from("cover.jpg");
+        let mut data = Vec::new();
+        reader.read_to_end(&mut data)?;
+        let ty = PlaylistCoverType::Jpg;
+
+        if let Some(c) = self.cover.as_mut() {
+            c.path = path;
+            c.data = data;
+            c.ty = ty;
+        } else {
+            self.cover = Some(PlaylistCover { path, data, ty });
+        }
+
+        Ok(())
+    }
+
     pub(crate) fn validate(&self) -> Result<(), PlaylistError> {
         if utils::str_is_empty_or_has_newlines(&self.title) {
             return Err(PlaylistError::InvalidField {
@@ -121,11 +154,11 @@ impl Playlist {
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub struct PlaylistCover {
     #[serde(rename = "cover")]
-    path: PathBuf,
+    pub path: PathBuf,
     #[serde(skip)]
-    data: Vec<u8>,
+    pub data: Vec<u8>,
     #[serde(skip)]
-    ty: PlaylistCoverType,
+    pub ty: PlaylistCoverType,
 }
 
 impl PlaylistCover {
