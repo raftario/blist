@@ -1,4 +1,8 @@
-use crate::{beatmap::Beatmap, utils, validation::PlaylistError};
+use crate::{
+    beatmap::Beatmap,
+    utils::{self, JPG_MAGIC_NUMBER, JPG_MAGIC_NUMBER_LEN, PNG_MAGIC_NUMBER, PNG_MAGIC_NUMBER_LEN},
+    validation::{PlaylistCoverError, PlaylistError},
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::path::PathBuf;
@@ -52,6 +56,10 @@ impl Playlist {
             }
         }
 
+        if let Some(c) = &self.cover {
+            c.validate()?;
+        }
+
         for (idx, m) in self.maps.iter().enumerate() {
             if let Err(error) = m.validate() {
                 return Err(PlaylistError::InvalidBeatmap { idx, error });
@@ -70,6 +78,55 @@ pub struct PlaylistCover {
     data: Vec<u8>,
     #[serde(skip)]
     ty: PlaylistCoverType,
+}
+
+impl PlaylistCover {
+    pub(crate) fn validate(&self) -> Result<(), PlaylistCoverError> {
+        match self.ty {
+            PlaylistCoverType::Png => {
+                if utils::path_is_invalid(&self.path) || self.path.extension().unwrap() != "png" {
+                    return Err(PlaylistCoverError::InvalidCoverPath {
+                        ty: "png",
+                        path: self.path.clone(),
+                    });
+                }
+                if self.data.len() < PNG_MAGIC_NUMBER_LEN
+                    || !constant_time_eq::constant_time_eq(
+                        &self.data[0..PNG_MAGIC_NUMBER_LEN],
+                        PNG_MAGIC_NUMBER,
+                    )
+                {
+                    return Err(PlaylistCoverError::InvalidCoverData { ty: "png" });
+                }
+            }
+            PlaylistCoverType::Jpg => {
+                if utils::path_is_invalid(&self.path) {
+                    return Err(PlaylistCoverError::InvalidCoverPath {
+                        ty: "jpg",
+                        path: self.path.clone(),
+                    });
+                }
+                let ext = self.path.extension().unwrap();
+                if ext != "jpg" && ext != "jpeg" {
+                    return Err(PlaylistCoverError::InvalidCoverPath {
+                        ty: "jpg",
+                        path: self.path.clone(),
+                    });
+                }
+                if self.data.len() < JPG_MAGIC_NUMBER_LEN
+                    || !constant_time_eq::constant_time_eq(
+                        &self.data[0..JPG_MAGIC_NUMBER_LEN],
+                        JPG_MAGIC_NUMBER,
+                    )
+                {
+                    return Err(PlaylistCoverError::InvalidCoverData { ty: "jpg" });
+                }
+            }
+            PlaylistCoverType::Unknown => return Err(PlaylistCoverError::UnknownCoverType),
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
