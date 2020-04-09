@@ -79,23 +79,29 @@ fn convert_inner<P: AsRef<Path>>(
         );
     }
 
-    println!("Reading `{}`", old_path.display());
+    if verbose {
+        println!("Reading `{}`", old_path.display());
+    }
     let legacy_playlist: LegacyPlaylist = {
         let mut reader = BufReader::new(File::open(old_path)?);
         serde_json::from_reader(&mut reader)?
     };
     let playlist = legacy_playlist.into_playlist(custom_data)?;
-    println!("Writing `{}`", new_path.display());
+    if verbose {
+        println!("Writing `{}`", new_path.display());
+    }
     {
         let mut writer = BufWriter::new(File::create(&new_path)?);
         playlist.write(&mut writer)?;
     }
 
-    println!(
-        "Done converting `{}` to `{}`",
-        old_path.display(),
-        new_path.display(),
-    );
+    if verbose {
+        println!(
+            "Done converting `{}` to `{}`",
+            old_path.display(),
+            new_path.display(),
+        );
+    }
     if delete_converted {
         if verbose {
             println!("Deleing `{}`", old_path.display());
