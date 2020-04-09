@@ -22,7 +22,7 @@ fn schema() -> &'static str {
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Playlist {
-    #[serde(rename = "$schema", default = "schema", skip_deserializing)]
+    #[serde(rename = "$schema", default = "schema")]
     pub _schema: &'static str,
     pub title: String,
     #[serde(skip_serializing_if = "Option::is_none")]
