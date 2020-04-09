@@ -49,22 +49,58 @@ impl Playlist {
             if !utils::path_is_invalid(&c.path) {
                 let ext = c.path.extension().unwrap();
                 if ext == "png" {
+                    let mut cover_file = zip.by_name(c.path.to_str().unwrap())?;
+
+                    let mut magic_number = [0; PNG_MAGIC_NUMBER_LEN];
+                    cover_file.read_exact(&mut magic_number)?;
+                    if !constant_time_eq::constant_time_eq(
+                        &magic_number[..PNG_MAGIC_NUMBER_LEN],
+                        PNG_MAGIC_NUMBER,
+                    ) {
+                        return Err(Error::Validation(
+                            PlaylistCoverError::InvalidCoverData { ty: "png" }.into(),
+                        ));
+                    }
+
+                    cover_file.read_to_end(&mut c.data)?;
                     c.ty = PlaylistCoverType::Png;
-                    let mut cover_file = zip.by_name(c.path.to_str().unwrap())?;
-                    cover_file.read_to_end(&mut c.data)?;
                 } else if ext == "jpg" || ext == "jpeg" {
-                    c.ty = PlaylistCoverType::Jpg;
                     let mut cover_file = zip.by_name(c.path.to_str().unwrap())?;
+
+                    let mut magic_number = [0; JPG_MAGIC_NUMBER_LEN];
+                    cover_file.read_exact(&mut magic_number)?;
+                    if !constant_time_eq::constant_time_eq(
+                        &magic_number[..JPG_MAGIC_NUMBER_LEN],
+                        JPG_MAGIC_NUMBER,
+                    ) {
+                        return Err(Error::Validation(
+                            PlaylistCoverError::InvalidCoverData { ty: "jpg" }.into(),
+                        ));
+                    }
+
                     cover_file.read_to_end(&mut c.data)?;
+                    c.ty = PlaylistCoverType::Jpg;
+                } else {
+                    return Err(Error::Validation(
+                        PlaylistCoverError::UnknownCoverType.into(),
+                    ));
                 }
+            } else {
+                return Err(Error::Validation(
+                    PlaylistCoverError::InvalidCoverPath {
+                        ty: "unknown",
+                        path: c.path.clone(),
+                    }
+                    .into(),
+                ));
             }
         }
 
-        playlist.validate()?;
+        playlist.validate_inner(false)?;
         Ok(playlist)
     }
     pub fn write<W: Write + Seek>(&self, writer: W) -> Result<(), Error> {
-        self.validate()?;
+        self.validate_inner(true)?;
 
         let mut zip = ZipWriter::new(writer);
 
@@ -113,7 +149,12 @@ impl Playlist {
         Ok(())
     }
 
-    pub(crate) fn validate(&self) -> Result<(), PlaylistError> {
+    #[inline]
+    pub fn validate(&self) -> Result<(), Error> {
+        Ok(self.validate_inner(true)?)
+    }
+
+    pub(crate) fn validate_inner(&self, validate_cover: bool) -> Result<(), PlaylistError> {
         if utils::str_is_empty_or_has_newlines(&self.title) {
             return Err(PlaylistError::InvalidField {
                 field: "title",
@@ -137,8 +178,10 @@ impl Playlist {
             }
         }
 
-        if let Some(c) = &self.cover {
-            c.validate()?;
+        if validate_cover {
+            if let Some(c) = &self.cover {
+                c.validate()?;
+            }
         }
 
         for (idx, m) in self.maps.iter().enumerate() {
@@ -173,7 +216,7 @@ impl PlaylistCover {
                 }
                 if self.data.len() < PNG_MAGIC_NUMBER_LEN
                     || !constant_time_eq::constant_time_eq(
-                        &self.data[0..PNG_MAGIC_NUMBER_LEN],
+                        &self.data[..PNG_MAGIC_NUMBER_LEN],
                         PNG_MAGIC_NUMBER,
                     )
                 {
@@ -196,7 +239,7 @@ impl PlaylistCover {
                 }
                 if self.data.len() < JPG_MAGIC_NUMBER_LEN
                     || !constant_time_eq::constant_time_eq(
-                        &self.data[0..JPG_MAGIC_NUMBER_LEN],
+                        &self.data[..JPG_MAGIC_NUMBER_LEN],
                         JPG_MAGIC_NUMBER,
                     )
                 {
@@ -221,5 +264,111 @@ impl Default for PlaylistCoverType {
     #[inline]
     fn default() -> Self {
         Self::Unknown
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        beatmap::BeatmapDifficulty,
+        playlist::{PlaylistCover, PlaylistCoverType},
+        Beatmap, Playlist,
+    };
+    use serde_json::Value;
+    use std::{io::Cursor, path::PathBuf};
+
+    #[test]
+    fn write_and_read() {
+        let mut old = Playlist::new("playlist".to_owned());
+        old.author = Some("author".to_owned());
+        old.description = Some("description".to_owned());
+        old.custom_data
+            .insert("key".to_owned(), Value::String("value".to_owned()));
+
+        let mut map = Beatmap::new_key("16af".to_owned());
+        map.difficulties.push(BeatmapDifficulty {
+            name: "Expert+".to_owned(),
+            characteristic: "normal".to_owned(),
+        });
+        old.maps.push(map);
+        old.maps.push(Beatmap::new_hash(
+            "0123456789abcdef0123456789abcdef01234567".to_string(),
+        ));
+        old.maps.push(Beatmap::new_level_id("level ID".to_string()));
+
+        let mut buffer = Cursor::new(Vec::new());
+        old.write(&mut buffer).unwrap();
+
+        buffer.set_position(0);
+        let new = Playlist::read(&mut buffer).unwrap();
+
+        assert_eq!(old, new);
+    }
+
+    #[test]
+    fn validation() {
+        let string = "string".to_owned();
+        let newline = "newline\n".to_owned();
+        let empty = "".to_owned();
+
+        let mut playlist = Playlist::new(string.clone());
+
+        let invalid_title = Playlist::new(newline.clone());
+        assert!(invalid_title.validate().is_err());
+
+        let mut invalid_author = playlist.clone();
+        invalid_author.author = Some(newline.clone());
+        assert!(invalid_author.validate().is_err());
+
+        let mut invalid_description = playlist.clone();
+        invalid_description.description = Some(empty.clone());
+        assert!(invalid_description.validate().is_err());
+
+        let mut invalid_cover_path = playlist.clone();
+        invalid_cover_path.cover = Some(PlaylistCover {
+            path: PathBuf::from("subdirectory").join("cover.exe"),
+            data: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            ty: PlaylistCoverType::Jpg,
+        });
+        assert!(invalid_cover_path.validate().is_err());
+
+        let mut invalid_cover_data = playlist.clone();
+        invalid_cover_data.cover = Some(PlaylistCover {
+            path: PathBuf::from("cover.png"),
+            data: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            ty: PlaylistCoverType::Png,
+        });
+        assert!(invalid_cover_data.validate().is_err());
+
+        let mut unknown_cover_type = playlist.clone();
+        unknown_cover_type.cover = Some(PlaylistCover {
+            path: PathBuf::from("cover"),
+            data: Vec::new(),
+            ty: PlaylistCoverType::Unknown,
+        });
+        assert!(unknown_cover_type.validate().is_err());
+
+        let invalid_key = Beatmap::new_key(string.clone());
+        playlist.maps.push(invalid_key);
+        assert!(playlist.validate().is_err());
+
+        playlist.maps.clear();
+        let invalid_hash = Beatmap::new_hash(string);
+        playlist.maps.push(invalid_hash);
+        assert!(playlist.validate().is_err());
+
+        playlist.maps.clear();
+        let invalid_level_id = Beatmap::new_level_id(empty.clone());
+        playlist.maps.push(invalid_level_id);
+        assert!(playlist.validate().is_err());
+
+        playlist.maps.clear();
+        let mut invalid_difficulty = Beatmap::new_key("16af".to_owned());
+        invalid_difficulty.difficulties.push(BeatmapDifficulty {
+            name: empty,
+            characteristic: newline,
+        });
+        playlist.maps.push(invalid_difficulty);
+        assert!(playlist.validate().is_err());
     }
 }
