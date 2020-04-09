@@ -7,10 +7,10 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{
-    io::{Read, Seek},
+    io::{Read, Seek, Write},
     path::PathBuf,
 };
-use zip::ZipArchive;
+use zip::{ZipArchive, ZipWriter};
 
 #[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -62,6 +62,22 @@ impl Playlist {
 
         playlist.validate()?;
         Ok(playlist)
+    }
+    pub fn write<W: Write + Seek>(&self, writer: W) -> Result<(), Error> {
+        self.validate()?;
+
+        let mut zip = ZipWriter::new(writer);
+
+        zip.start_file("playlist.json", Default::default())?;
+        serde_json::to_writer(&mut zip, &self)?;
+
+        if let Some(c) = &self.cover {
+            zip.start_file_from_path(&c.path, Default::default())?;
+            zip.write_all(&c.data)?;
+        }
+
+        zip.finish()?;
+        Ok(())
     }
 
     pub(crate) fn validate(&self) -> Result<(), PlaylistError> {
