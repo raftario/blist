@@ -8,6 +8,7 @@
     "scripts": {
         "build": "tsc",
         "lint": "eslint --fix src/*.ts",
+        "postinstall": "node postinstall.js",
         "prepublishOnly": "tsc"
     },
     "files": [

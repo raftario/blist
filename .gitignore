@@ -5,5 +5,7 @@
 /node/dist/
 /node/package-lock.json
 
+/node/src/playlist.schema.json
+
 .idea/
 .vscode/
