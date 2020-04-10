@@ -1,0 +1,23 @@
+{
+    "env": {
+        "es6": true,
+        "node": true
+    },
+    "parser": "@typescript-eslint/parser",
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "prettier/@typescript-eslint",
+        "plugin:prettier/recommended"
+    ],
+    "rules": {
+        "prettier/prettier": 1,
+        "sort-imports": 1,
+        "no-dupe-class-members": 0,
+        "@typescript-eslint/no-non-null-assertion": 0
+    },
+    "parserOptions": {
+        "ecmaVersion": 2019,
+        "sourceType": "module"
+    }
+}

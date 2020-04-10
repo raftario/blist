@@ -1,0 +1,134 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://raw.githubusercontent.com/raftario/blist/master/playlist.schema.json",
+    "title": "Playlist",
+    "description": "A Beat Saber playlist",
+    "type": "object",
+    "properties": {
+        "title": {
+            "description": "The playlist title",
+            "type": "string",
+            "pattern": "^[^\\r\\n]+$"
+        },
+        "author": {
+            "description": "The playlist author",
+            "type": "string",
+            "pattern": "^[^\\r\\n]+$"
+        },
+        "description": {
+            "description": "The optional playlist description",
+            "type": "string",
+            "minLength": 1
+        },
+        "cover": {
+            "description": "The filename of the optional playlist cover image",
+            "type": "string",
+            "pattern": "^[0-9A-Za-z-_ ]+\\.(png|jpe?g)$"
+        },
+        "maps": {
+            "description": "The beatmaps contained in the playlist",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/beatmap"
+            }
+        },
+        "customData": {
+            "description": "Custom data not included in the schema",
+            "type": "object"
+        }
+    },
+    "required": ["title", "maps"],
+    "additionalProperties": false,
+    "definitions": {
+        "beatmap": {
+            "title": "Beatmap",
+            "description": "A Beat Saber map",
+            "type": "object",
+            "properties": {
+                "type": {
+                    "description": "The entry type defining how the beatmap is identified in the playlist",
+                    "type": "string",
+                    "enum": ["key", "hash", "levelID"]
+                },
+                "date": {
+                    "description": "The optional RFC3339 date and time the beatmap was added to the playlist",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "difficulties": {
+                    "description": "The optional recommended difficulties for the beatmap",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/difficulty"
+                    }
+                },
+                "key": {
+                    "description": "The BeatSaver key of the beatmap",
+                    "type": "string",
+                    "pattern": "^[0-9A-Fa-f]+$"
+                },
+                "hash": {
+                    "description": "The SHA1 hash of the beatmap",
+                    "type": "string",
+                    "pattern": "^[0-9A-Fa-f]{40}$"
+                },
+                "levelID": {
+                    "description": "The level ID of the BeatMap",
+                    "type": "string",
+                    "pattern": "^[^\\r\\n]+$"
+                },
+                "customData": {
+                    "description": "Custom data not included in the schema",
+                    "type": "object"
+                }
+            },
+            "required": ["type"],
+            "additionalProperties": false,
+            "allOf": [
+                {
+                    "if": {
+                        "properties": { "type": { "const": "key" } }
+                    },
+                    "then": {
+                        "required": ["key"]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { "type": { "const": "hash" } }
+                    },
+                    "then": {
+                        "required": ["hash"]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { "type": { "const": "levelID" } }
+                    },
+                    "then": {
+                        "required": ["levelID"]
+                    }
+                }
+            ]
+        },
+        "difficulty": {
+            "title": "Difficulty",
+            "description": "A beatmap difficulty",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "The difficulty name",
+                    "type": "string",
+                    "pattern": "^[^\\r\\n]+$"
+                },
+                "characteristic": {
+                    "description": "The characteristic name",
+                    "type": "string",
+                    "pattern": "^[^\\r\\n]+$"
+                }
+            },
+            "required": ["characteristic", "name"],
+            "additionalProperties": false
+        }
+    }
+}

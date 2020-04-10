@@ -1,5 +1,9 @@
 /rust/target/
 /rust/Cargo.lock
 
+/node/node_modules/
+/node/dist/
+/node/package-lock.json
+
 .idea/
 .vscode/
