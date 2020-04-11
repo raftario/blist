@@ -65,7 +65,7 @@
                 "key": {
                     "description": "The BeatSaver key of the beatmap",
                     "type": "string",
-                    "pattern": "^[0-9A-Fa-f]+$"
+                    "pattern": "^[0-9A-Fa-f]{1,8}$"
                 },
                 "hash": {
                     "description": "The SHA1 hash of the beatmap",

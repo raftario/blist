@@ -52,39 +52,52 @@ export class Beatmap {
     levelID?: string;
     customData?: { [key: string]: unknown };
 
-    private constructor(identifier: string, type?: BeatmapType) {
-        if (type === undefined) {
-            if (/^[0-9A-Fa-f]+$/.test(identifier)) {
-                if (identifier.length === 40) {
-                    type = "hash";
-                } else {
-                    type = "key";
-                }
-            } else {
-                type = "levelID";
-            }
-        }
+    private constructor(identifier: string, type: BeatmapType) {
         this.type = type;
-
+        this.date = new Date();
         if (this.type === "key") {
             this.key = identifier;
         } else if (this.type === "hash") {
             this.hash = identifier;
         } else if (this.type === "levelID") {
             this.levelID = identifier;
+        } else {
+            throw new Error("Unexpected");
         }
-
-        this.date = new Date();
     }
 
     /**
-     * Creates a new beatmap
+     * Creates a new beatmap identified by its BeatSaver key
      *
-     * @param identifier Beatmap identifier, either key, hash or levelID
-     * @param type Betmap type, automatically detected if ommitted
+     * @param key BeatSaver key
      */
-    static new(identifier: string, type?: BeatmapType): Beatmap {
-        return new Beatmap(identifier, type);
+    static newKey(key: string): Beatmap {
+        if (!/^[0-9A-Fa-f]{1,8}$/.test(key)) {
+            throw new Error("Invalid key");
+        }
+        return new Beatmap(key, "key");
+    }
+    /**
+     * Creates a new beatmap identified by its hash
+     *
+     * @param hash Hash
+     */
+    static newHash(hash: string): Beatmap {
+        if (!/^[0-9A-Fa-f]{40}$/.test(hash)) {
+            throw new Error("Invalid hash");
+        }
+        return new Beatmap(hash, "hash");
+    }
+    /**
+     * Creates a new beatmap identified by its level ID
+     *
+     * @param levelID Level ID
+     */
+    static newLevelID(levelID: string): Beatmap {
+        if (!/^[^\r\n]+$/.test(levelID)) {
+            throw new Error("Invalid levelID");
+        }
+        return new Beatmap(levelID, "levelID");
     }
 
     get date(): Date | undefined {
@@ -190,11 +203,11 @@ export class Playlist {
         playlist.maps = jsonPlaylist.maps.map((m) => {
             let beatmap: Beatmap;
             if (m.type === "key") {
-                beatmap = Beatmap.new(m.key!, "key");
+                beatmap = Beatmap.newKey(m.key!);
             } else if (m.type === "hash") {
-                beatmap = Beatmap.new(m.hash!, "hash");
+                beatmap = Beatmap.newHash(m.hash!);
             } else if (m.type === "levelID") {
-                beatmap = Beatmap.new(m.levelID!, "levelID");
+                beatmap = Beatmap.newLevelID(m.levelID!);
             } else {
                 throw new Error("Unexpected");
             }
