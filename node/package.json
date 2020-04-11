@@ -1,6 +1,6 @@
 {
     "name": "blist-bs",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "main": "dist/index.js",
     "repository": "https://github.com/raftario/blist",
     "author": "Raphaël Thériault <raphael_theriault@outlook.com>",
@@ -8,8 +8,7 @@
     "scripts": {
         "build": "tsc",
         "lint": "eslint --fix src/*.ts",
-        "postinstall": "node postinstall.js",
-        "prepublishOnly": "tsc"
+        "prepublishOnly": "node copySchema.js && tsc"
     },
     "files": [
         "./dist/*"
